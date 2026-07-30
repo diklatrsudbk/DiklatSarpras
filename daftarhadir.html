@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar Hadir - RSUD Bandung Kiwari</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        /* Menggunakan font Bookman Old Style untuk format print/dokumen resmi */
+        body {
+            font-family: 'Bookman Old Style', Bookman, Georgia, serif;
+            background-color: #f1f5f9;
+            color: #000;
+        }
+
+        /* Styling font untuk form UI agar tetap modern */
+        .ui-font {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .signature-canvas {
+            touch-action: none;
+            cursor: crosshair;
+            background-color: #ffffff;
+            border: 2px dashed #cbd5e1;
+            border-radius: 0.5rem;
+        }
+
+        /* Kertas A4 Styling untuk Desktop */
+        .a4-container {
+            max-width: 210mm; /* Lebar A4 */
+            min-height: 297mm; /* Tinggi A4 */
+            margin: 2rem auto;
+            background: white;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            padding: 20mm 15mm;
+            position: relative;
+        }
+
+        @media (max-width: 768px) {
+            .a4-container {
+                margin: 0;
+                padding: 15px;
+                min-height: 100vh;
+                box-shadow: none;
+            }
+        }
+
+        /* Tabel Kop Surat */
+        .kop-surat {
+            border-bottom: 4px double #000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+
+        /* Tabel Daftar Hadir Print Style */
+        .print-table th, .print-table td {
+            border: 1px solid #000;
+            padding: 8px 12px;
+            vertical-align: middle;
+        }
+        .print-table th {
+            text-align: center;
+            font-weight: bold;
+        }
+
+        /* Zigzag signature placement */
+        .sig-cell {
+            height: 60px;
+            position: relative;
+        }
+        .sig-number {
+            position: absolute;
+            top: 5px;
+            font-size: 0.9em;
+        }
+        .sig-img {
+            max-height: 50px;
+            max-width: 100px;
+        }
+        .sig-left .sig-number { left: 5px; }
+        .sig-right .sig-number { right: 5px; /* Atau di tengah (left: 45%) seperti format zig-zag */ left: 45%; }
+        
+        .sig-left .sig-img { display: block; margin-left: 20px; }
+        .sig-right .sig-img { display: block; margin-left: 50%; }
+
+        /* Loader */
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #3498db;
+            width: 20px;
+            height: 20px;
+            -webkit-animation: spin 1s linear infinite;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- Navbar Control (Hanya tampil di layar web, disembunyikan saat print) -->
+    <div class="bg-white border-b border-slate-200 p-3 shadow-sm print:hidden flex justify-between items-center px-4 md:px-8 ui-font z-10 sticky top-0">
+        <div class="text-sm font-semibold flex items-center gap-2 text-slate-700">
+            <i class="fa-solid fa-file-signature text-emerald-600 text-lg"></i> Form e-Presensi RSUD
+        </div>
+        <div>
+            <button id="btnTambahTop" onclick="openTambahModal()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-md text-sm font-bold transition flex items-center gap-2" disabled>
+                <i class="fa-solid fa-user-plus"></i> Isi Kehadiran
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Dokumen A4 -->
+    <div class="a4-container">
+        <!-- Overlay Loading Data -->
+        <div id="loadingOverlay" class="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 flex flex-col items-center justify-center">
+            <div class="loader mb-3 w-8 h-8 border-4 border-slate-200 border-top-emerald-600"></div>
+            <p class="ui-font text-sm font-medium text-slate-600">Menghubungkan ke Spreadsheet...</p>
+        </div>
+
+        <!-- Overlay Error/Closed -->
+        <div id="errorOverlay" class="absolute inset-0 bg-slate-50/95 z-20 hidden flex-col items-center justify-center text-center p-6 border-2 border-rose-200 m-4 rounded-xl">
+            <i class="fa-solid fa-file-circle-xmark text-4xl text-rose-500 mb-3"></i>
+            <h2 class="text-xl font-bold font-sans text-slate-800 mb-2">Form Presensi Tidak Aktif</h2>
+            <p id="errorText" class="text-sm ui-font text-slate-600 max-w-md">Kriteria (STATUS = OPEN & TEMPLATE = T_PL) tidak terpenuhi pada sheet SETTING_DH.</p>
+            <button onclick="loadData()" class="mt-4 px-4 py-2 bg-slate-200 hover:bg-slate-300 rounded-lg text-sm ui-font font-medium transition">
+                <i class="fa-solid fa-rotate-right"></i> Coba Lagi
+            </button>
+        </div>
+
+        <!-- KOP SURAT -->
+        <div class="kop-surat flex items-center justify-between">
+            <!-- Logo Kiri Placeholder -->
+            <div class="w-20 h-24 flex items-center justify-center">
+                <!-- Gunakan gambar logo asli jika ada, ex: <img src="logo_bandung.png" class="w-full"> -->
+                <div class="w-16 h-20 border border-slate-300 rounded flex flex-col items-center justify-center text-[8px] text-slate-400 text-center p-1 print:hidden">
+                    Logo Bandung
+                </div>
+            </div>
+            
+            <!-- Teks Tengah -->
+            <div class="text-center flex-1 px-4">
+                <h3 class="text-lg font-bold leading-tight uppercase">PEMERINTAH KOTA BANDUNG</h3>
+                <h2 class="text-xl md:text-2xl font-bold leading-tight uppercase mb-1">RUMAH SAKIT UMUM DAERAH<br>BANDUNG KIWARI</h2>
+                <p class="text-[11px] md:text-xs">
+                    Jl. KH. Wahid Hasyim Nomor. 311 <i class="fa-solid fa-phone mx-1"></i> (022) 8603777 Fax. (022) 5221531 Bandung 40234
+                    <br>
+                    Email: sekretariat@rsudbandungkiwari.or.id | Website: www.rsudbandungkiwari.or.id
+                </p>
+            </div>
+
+            <!-- Logo Kanan Placeholder -->
+            <div class="w-20 h-24 flex items-center justify-center">
+                <!-- Gunakan gambar logo asli jika ada -->
+                <div class="w-16 h-20 border border-slate-300 rounded flex flex-col items-center justify-center text-[8px] text-slate-400 text-center p-1 print:hidden">
+                    Logo RSUD
+                </div>
+            </div>
+        </div>
+
+        <!-- JUDUL -->
+        <div class="text-center mb-6">
+            <h1 class="text-xl font-bold underline decoration-2 uppercase tracking-wide">DAFTAR HADIR</h1>
+        </div>
+
+        <!-- META INFO -->
+        <table class="w-full text-[13px] md:text-sm mb-6 leading-relaxed">
+            <tr>
+                <td class="w-32 py-1 align-top">Hari/Tanggal</td>
+                <td class="w-4 py-1 align-top">:</td>
+                <td class="py-1 align-top font-semibold" id="txtTanggal">-</td>
+            </tr>
+            <tr>
+                <td class="py-1 align-top">Waktu</td>
+                <td class="py-1 align-top">:</td>
+                <td class="py-1 align-top" id="txtWaktu">-</td>
+            </tr>
+            <tr>
+                <td class="py-1 align-top">Tempat</td>
+                <td class="py-1 align-top">:</td>
+                <td class="py-1 align-top" id="txtTempat">-</td>
+            </tr>
+            <tr>
+                <td class="py-1 align-top">Acara</td>
+                <td class="py-1 align-top">:</td>
+                <td class="py-1 align-top font-bold" id="txtAcara">-</td>
+            </tr>
+        </table>
+
+        <!-- TABEL UTAMA -->
+        <div class="overflow-x-auto pb-4">
+            <table class="w-full print-table text-[12px] md:text-sm border-collapse">
+                <thead class="bg-slate-100">
+                    <tr>
+                        <th class="w-12">No</th>
+                        <th class="w-48">Nama</th>
+                        <th class="w-40">Ruangan</th>
+                        <th class="w-32">Profesi</th>
+                        <th class="w-40">Tanda Tangan</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Data will be loaded here via JS -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- PENGESAHAN BAWAH -->
+        <div class="mt-12 flex justify-end text-[13px] md:text-sm text-center">
+            <div class="w-64">
+                <p id="txtJabatan1" class="mb-0 leading-tight">Kepala Bagian / Pimpinan</p>
+                <p id="txtJabatan2" class="mb-16 leading-tight">Instansi Terkait</p>
+                
+                <p id="txtNamaPimpinan" class="font-bold underline decoration-1 mb-0">NAMA PIMPINAN</p>
+                <p class="mt-0">NIP. <span id="txtNipPimpinan">-</span></p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MODAL TAMBAH DAFTAR HADIR (UI Tetap Modern) -->
+    <div id="modalTambah" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-opacity duration-200 ui-font">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[92vh] flex flex-col overflow-hidden transform scale-95 transition-transform duration-200">
+            
+            <div class="px-5 py-4 bg-emerald-700 text-white flex items-center justify-between">
+                <h3 class="font-bold text-base flex items-center gap-2">
+                    <i class="fa-solid fa-user-pen"></i> Form Pengisian Kehadiran
+                </h3>
+                <button onclick="closeTambahModal()" class="text-emerald-200 hover:text-white transition text-xl leading-none">&times;</button>
+            </div>
+
+            <div class="p-5 space-y-4 overflow-y-auto text-sm">
+                
+                <div class="bg-slate-50 border border-slate-200 p-3 rounded-lg text-xs text-slate-600 mb-2">
+                    Data Anda akan langsung tersimpan di dalam sistem. <br>Harap isi sesuai dengan identitas resmi.
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Nama Lengkap & Gelar <span class="text-rose-500">*</span></label>
+                    <input type="text" id="inputNama" required placeholder="Contoh: Dr. Budi Santoso, Sp.A" class="w-full px-3 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Ruangan / Unit <span class="text-rose-500">*</span></label>
+                        <input type="text" id="inputRuangan" required placeholder="Contoh: Poliklinik Terpadu" class="w-full px-3 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Profesi <span class="text-rose-500">*</span></label>
+                        <input type="text" id="inputProfesi" required placeholder="Contoh: Dokter Umum" class="w-full px-3 py-2.5 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
+                    </div>
+                </div>
+
+                <!-- Tanda Tangan -->
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="font-semibold text-slate-700">Tanda Tangan Digital <span class="text-rose-500">*</span></label>
+                        <button type="button" onclick="clearCanvas()" class="text-xs text-slate-500 hover:text-rose-600 transition">
+                            <i class="fa-solid fa-eraser"></i> Bersihkan
+                        </button>
+                    </div>
+                    <div class="relative bg-white rounded-lg border-2 border-slate-300 overflow-hidden">
+                        <canvas id="signatureCanvas" class="signature-canvas w-full h-40 block"></canvas>
+                        <div id="canvasPlaceholder" class="absolute inset-0 flex items-center justify-center pointer-events-none text-slate-400 text-xs">
+                            Goreskan TTD di sini (Support Touchscreen)
+                        </div>
+                    </div>
+                    <p id="canvasWarning" class="text-rose-500 hidden text-xs font-semibold mt-1">Tanda tangan wajib diisi!</p>
+                </div>
+
+            </div>
+
+            <div class="px-5 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-3">
+                <button type="button" onclick="closeTambahModal()" class="px-4 py-2 bg-white hover:bg-slate-100 border border-slate-300 text-slate-700 font-semibold rounded-lg transition">Batal</button>
+                <button type="button" id="btnSubmitForm" onclick="submitAttendance()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg transition flex items-center gap-2">
+                    <span>Simpan Data</span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Toast Notification Custom (Pengganti Alert) -->
+    <div id="toastMessage" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-full shadow-2xl z-[100] opacity-0 pointer-events-none transition-opacity duration-300 flex items-center gap-3 ui-font">
+        <i class="fa-solid fa-circle-info text-emerald-400 text-lg"></i>
+        <span id="toastText" class="text-sm font-medium">Notifikasi</span>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // =========================================================================
+        // URL WEB APP GOOGLE APPS SCRIPT (Ganti dengan URL hasil deploy Anda)
+        // Format: https://script.google.com/macros/s/AKfycby.../exec
+        // =========================================================================
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyfQ_lTa4mZzM6q_gkhzFaMERpBJZ2G1xi25fXkG9uRnACsuQlz36mrr2Oy-w2ImWAa/exec"; 
+        
+        let globalConfig = null;
+        
+        // Canvas State
+        let canvas, ctx;
+        let isDrawing = false;
+        let hasSigned = false;
+
+        window.onload = function() {
+            initCanvas();
+            loadData();
+        };
+
+        // Fungsi Ambil Data dari API Script
+        async function loadData() {
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const errorOverlay = document.getElementById('errorOverlay');
+            const btnTambah = document.getElementById('btnTambahTop');
+            
+            // Validasi URL Kosong
+            if(WEB_APP_URL.includes("ISI_DENGAN_URL_WEB_APP")) {
+                loadingOverlay.classList.add('hidden');
+                errorOverlay.classList.remove('hidden');
+                errorOverlay.classList.add('flex');
+                document.getElementById('errorText').innerHTML = "Script URL Web App belum diatur.<br>Ganti variabel <code>WEB_APP_URL</code> di kode HTML.";
+                return;
+            }
+
+            loadingOverlay.classList.remove('hidden');
+            errorOverlay.classList.add('hidden');
+            errorOverlay.classList.remove('flex');
+            btnTambah.disabled = true;
+
+            try {
+                // Fetch Request to GAS GET endpoint (CORS redirect='follow' handle)
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'GET',
+                    redirect: 'follow' 
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    globalConfig = result.config;
+                    renderConfig(result.config);
+                    renderTableData(result.data || []);
+                    loadingOverlay.classList.add('hidden');
+                    btnTambah.disabled = false;
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (err) {
+                loadingOverlay.classList.add('hidden');
+                errorOverlay.classList.remove('hidden');
+                errorOverlay.classList.add('flex');
+                document.getElementById('errorText').innerText = err.message || "Gagal menghubungi server Apps Script.";
+            }
+        }
+
+        function renderConfig(config) {
+            // Tanggal logic (Bisa dari setting Waktu_Mulai atau today)
+            const today = new Date();
+            const hariList = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+            const bulanList = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+            
+            // Format: Senin / 29 Juli 2026
+            const strTanggal = `${hariList[today.getDay()]} / ${today.getDate()} ${bulanList[today.getMonth()]} ${today.getFullYear()}`;
+            
+            document.getElementById('txtTanggal').innerText = strTanggal;
+            document.getElementById('txtWaktu').innerText = `${config.waktuMulai} s/d ${config.waktuSelesai}`;
+            document.getElementById('txtTempat').innerText = config.tempat;
+            document.getElementById('txtAcara').innerText = config.namaAcara;
+
+            // Jabatan Parsing (Pisahkan baris berdasarkan " / " jika ada untuk styling)
+            let jabText = config.jabatan || "-";
+            if(jabText.includes(" / ")) {
+                let parts = jabText.split(" / ");
+                document.getElementById('txtJabatan1').innerText = parts[0];
+                document.getElementById('txtJabatan2').innerText = parts[1];
+            } else {
+                document.getElementById('txtJabatan1').innerText = jabText;
+                document.getElementById('txtJabatan2').innerText = "";
+            }
+
+            document.getElementById('txtNamaPimpinan').innerText = config.namaPimpinan;
+            document.getElementById('txtNipPimpinan').innerText = config.nip;
+        }
+
+        function renderTableData(dataList) {
+            const tbody = document.getElementById('tableBody');
+            
+            if (dataList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-slate-500 italic">Belum ada data peserta.</td></tr>`;
+                return;
+            }
+
+            let htmlString = '';
+            dataList.forEach((row, index) => {
+                // Tentukan zig-zag alignment TTD
+                const isOdd = (index + 1) % 2 !== 0; 
+                const alignClass = isOdd ? 'sig-left' : 'sig-right';
+                
+                // Link TTD menggunakan Drive UC (jika fileId ada)
+                const imgTag = row.ttdId ? `<img src="https://drive.google.com/uc?id=${row.ttdId}" class="sig-img">` : ``;
+
+                htmlString += `
+                    <tr>
+                        <td class="text-center font-medium">${row.no}</td>
+                        <td class="font-medium px-2">${escapeHtml(row.nama)}</td>
+                        <td class="px-2">${escapeHtml(row.ruangan)}</td>
+                        <td class="px-2 text-center text-sm">${escapeHtml(row.profesi)}</td>
+                        <td class="p-0 align-top">
+                            <div class="sig-cell ${alignClass}">
+                                <span class="sig-number">${row.no}.</span>
+                                ${imgTag}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = htmlString;
+        }
+
+        // ==========================================
+        // FITUR PENGISIAN BARU (POST KE SCRIPT)
+        // ==========================================
+        async function submitAttendance() {
+            if (!globalConfig) return;
+
+            const nama = document.getElementById('inputNama').value.trim();
+            const ruangan = document.getElementById('inputRuangan').value.trim();
+            const profesi = document.getElementById('inputProfesi').value.trim();
+
+            if (!nama || !ruangan || !profesi) {
+                showMessage("Harap lengkapi semua isian teks!");
+                return;
+            }
+
+            if (!hasSigned) {
+                document.getElementById('canvasWarning').classList.remove('hidden');
+                return;
+            }
+
+            const btnSubmit = document.getElementById('btnSubmitForm');
+            btnSubmit.disabled = true;
+            btnSubmit.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...`;
+
+            const payload = {
+                namaSheet: globalConfig.namaSheet,
+                nama: nama,
+                ruangan: ruangan,
+                profesi: profesi,
+                ttdBase64: canvas.toDataURL('image/png')
+            };
+
+            try {
+                // POST request ke Google Apps Script (text/plain untuk menghindari CORS Preflight OPTIONS limit di GAS)
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    redirect: 'follow',
+                    headers: {
+                        'Content-Type': 'text/plain;charset=utf-8',
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    closeTambahModal();
+                    showMessage("Presensi berhasil disimpan!");
+                    loadData(); // Reload Table Content
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                console.error(error);
+                showMessage("Terjadi kesalahan saat menyimpan data. Cek koneksi atau URL Apps Script.");
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.innerHTML = `<span>Simpan Data</span>`;
+            }
+        }
+
+
+        // ==========================================
+        // CANVAS & MODAL UTILS
+        // ==========================================
+        function initCanvas() {
+            canvas = document.getElementById('signatureCanvas');
+            ctx = canvas.getContext('2d');
+
+            function resizeCanvas() {
+                const rect = canvas.parentElement.getBoundingClientRect();
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+                ctx.lineWidth = 2.5;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.strokeStyle = '#0f172a'; // Tinta Hitam
+            }
+
+            // Panggil sekali untuk init, dan setiap modal terbuka
+            window.addEventListener('resize', resizeCanvas);
+            setTimeout(resizeCanvas, 100); 
+
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseleave', stopDrawing);
+
+            canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+            canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+            canvas.addEventListener('touchend', stopDrawing);
+        }
+
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            let x, y;
+            if (e.touches) {
+                x = e.touches[0].clientX - rect.left;
+                y = e.touches[0].clientY - rect.top;
+            } else {
+                x = e.clientX - rect.left;
+                y = e.clientY - rect.top;
+            }
+            return { x, y };
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            hasSigned = true;
+            document.getElementById('canvasPlaceholder').style.display = 'none';
+            document.getElementById('canvasWarning').classList.add('hidden');
+            const pos = getPos(e);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+        }
+
+        function handleTouchStart(e) { e.preventDefault(); startDrawing(e); }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            const pos = getPos(e);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+        }
+
+        function handleTouchMove(e) { e.preventDefault(); draw(e); }
+
+        function stopDrawing() {
+            if (isDrawing) {
+                ctx.closePath();
+                isDrawing = false;
+            }
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            hasSigned = false;
+            document.getElementById('canvasPlaceholder').style.display = 'flex';
+        }
+
+        function openTambahModal() {
+            document.getElementById('inputNama').value = '';
+            document.getElementById('inputRuangan').value = '';
+            document.getElementById('inputProfesi').value = '';
+            clearCanvas();
+            
+            // Fix canvas dimension bug when hidden
+            setTimeout(() => {
+                const rect = canvas.parentElement.getBoundingClientRect();
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+                ctx.lineWidth = 2.5;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+            }, 100);
+
+            const m = document.getElementById('modalTambah');
+            m.classList.remove('opacity-0', 'pointer-events-none');
+            m.firstElementChild.classList.remove('scale-95');
+        }
+
+        function closeTambahModal() {
+            const m = document.getElementById('modalTambah');
+            m.classList.add('opacity-0', 'pointer-events-none');
+            m.firstElementChild.classList.add('scale-95');
+        }
+
+        // Custom Message Handler (Toast)
+        function showMessage(msg) {
+            const toast = document.getElementById('toastMessage');
+            document.getElementById('toastText').innerText = msg;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 3500);
+        }
+
+        function escapeHtml(str) {
+            return str ? str.toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;") : "";
+        }
+    </script>
+</body>
+</html>
