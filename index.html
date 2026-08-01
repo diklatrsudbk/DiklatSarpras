@@ -53,6 +53,8 @@
         .toggle-checkbox:checked + .toggle-label { background-color: #68D391; }
         
         #loader { backdrop-filter: blur(4px); }
+
+        [x-cloak] { display: none !important; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-200 transition-colors duration-300 overflow-x-hidden">
@@ -342,22 +344,50 @@
                 </section>
 
                     <!-- AREA SURVEY DENGAN ALPINE.JS -->
-                    <section id="view-survey" class="view-section hidden flex-col min-h-screen pb-10 space-y-6" x-data="surveyData()" x-init="initDashboard()">
-                        
-                        <!-- Loading State -->
+                     <section id="view-survey" class="view-section hidden flex-col min-h-screen pb-10 space-y-6" x-data="surveyData()" x-init="initDashboard()">
+
+                        <!-- KONTROL DASHBOARD: Filter & Reload -->
+                        <div class="flex flex-wrap gap-3 items-center">
+                            <!-- Dropdown Filter -->
+                            <select x-model="periodFilter" @change="applyFilter()" class="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="FULL">Tahun Penuh (Jan - Des)</option>
+                                <option value="TW1">Semester 1 (Jan - Jun)</option>
+                                <option value="TW2">Semester 2 (Jul - Des)</option>
+                            </select>
+
+                            <!-- Tombol Reload Data -->
+                            <button @click="initDashboard()" :disabled="isLoading" class="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg shadow-sm text-sm font-medium transition duration-200">
+                                <svg x-show="!isLoading" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                <svg x-show="isLoading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                                <span x-text="isLoading ? 'Memuat...' : 'Reload Data'"></span>
+                            </button>
+                        </div>
+
+                        <!-- ========================================== -->
+                        <!-- TAMBAHKAN TOMBOL SURVEY KPPD DI SINI -->
+                        <!-- ========================================== -->
+                        <a href="surveykppd.html" target="_blank" class="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm text-sm font-medium transition duration-200 ml-auto sm:ml-0">
+                            <!-- Ikon External Link -->
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                            </svg>
+                            Buka Survey KPPD
+                        </a>
+                        <!-- ========================================== -->
+
+                        <!-- Loading State (Duplikat sudah dihapus) -->
                         <div x-show="isLoading" class="flex justify-center items-center py-10">
                             <div class="animate-spin rounded-full h-10 w-10 border-b-4 border-sky-500"></div>
                             <span class="ml-3 text-gray-500 dark:text-gray-400">Menarik data dan memproses grafik...</span>
                         </div>
 
-                        <!-- TOP ROW: Line Chart & Pie Chart -->
-                        <div x-show="!isLoading" class="grid grid-cols-1 lg:grid-cols-3 gap-6" style="display: none;">
+                        <!-- TOP ROW: Line Chart & Pie Chart (Atribut style="display: none;" dihapus) -->
+                        <div x-show="!isLoading" class="grid grid-cols-1 lg:grid-cols-3 gap-6" x-cloak>
                             
                             <!-- CARD KIRI: Grafik Tren (Line Chart) -->
                             <div class="lg:col-span-2 bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col">
                                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
                                     <h3 class="text-sm font-bold text-gray-700 dark:text-gray-300">Tren Rata-rata Kepuasan Pasien</h3>
-                                    
                                     <!-- Dropdown Filter Waktu -->
                                     <select x-model="timeFilter" @change="updateCharts()" class="text-xs sm:text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 outline-none focus:ring-2 focus:ring-sky-500 text-gray-700 dark:text-gray-200">
                                         <option value="day">Harian</option>
@@ -380,55 +410,79 @@
                             
                         </div>
 
-                        <!-- BOTTOM ROW: Tabel Data & Saran -->
-                        <!-- BOTTOM ROW: Tabel Data & Saran -->
-    <div x-show="!isLoading" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col mt-6" style="display: none;">
-        <div class="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800">
-            <h3 class="text-sm font-bold text-gray-700 dark:text-gray-300">Tabel Responden & Saran/Masukan</h3>
-            <span class="text-xs px-2 py-1 bg-sky-100 text-sky-700 rounded-md font-semibold" x-text="surveyData.length + ' Responden'"></span>
-        </div>
-        
-        <!-- Perbaikan: Hapus h-[400px] ganti dengan max-h-[500px] agar tidak mengecil -->
-        <div class="overflow-x-auto overflow-y-auto max-h-[500px] w-full">
-            <!-- Perbaikan: Hapus table-fixed -->
-            <table class="w-full text-left text-sm text-gray-600 dark:text-gray-400">
-                <thead class="bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-xs uppercase font-semibold sticky top-0 z-10 shadow-sm">
-                    <tr>
-                        <th class="px-4 py-3 whitespace-nowrap">Tanggal</th>
-                        <th class="px-4 py-3 min-w-[150px]">Nama</th>
-                        <th class="px-4 py-3 whitespace-nowrap">Ruangan</th>
-                        <th class="px-4 py-3 text-center whitespace-nowrap">Rata Skor</th>
-                        <th class="px-4 py-3 min-w-[250px]">Saran & Masukan</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
-                    <template x-for="(item, index) in surveyData" :key="index">
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                            <td class="px-4 py-3 whitespace-nowrap text-xs" x-text="String(item.tanggal || item.timestamp).substring(0,10)"></td>
-                            <td class="px-4 py-3 font-medium text-gray-800 dark:text-gray-200" x-text="item.nama"></td>
-                            <td class="px-4 py-3 whitespace-nowrap" x-text="item.ruangan"></td>
-                            <td class="px-4 py-3 text-center">
-                                <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold"
-                                      :class="item.skor_rata_rata >= 4 ? 'bg-green-100 text-green-700' : (item.skor_rata_rata >= 3 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700')">
-                                    <i class="fas fa-star text-[10px]"></i>
-                                    <span x-text="item.skor_rata_rata"></span>
-                                </span>
-                            </td>
-                            <!-- Kolom Saran -->
-                            <td class="px-4 py-3 text-gray-500 dark:text-gray-400">
-                                <div class="truncate max-w-[200px] md:max-w-xs lg:max-w-md xl:max-w-xl cursor-help hover:text-sky-600 transition-colors" 
-                                     :title="item.saran && item.saran.trim() !== '' ? item.saran : 'Tidak ada saran'"
-                                     x-text="item.saran && item.saran.trim() !== '' ? '\"' + item.saran + '\"' : '- Tidak ada saran -'">
+                        <!-- MIDDLE ROW: Ruangan, Gender, Pertanyaan -->
+                        <div x-show="!isLoading" class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6" x-cloak>
+                            
+                            <!-- 1. BAR CHART: Ruangan -->
+                            <div class="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col">
+                                <h3 class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-4">Total Survey per Ruangan</h3>
+                                <div class="relative flex-1 w-full min-h-[220px]">
+                                    <canvas id="roomBarChart"></canvas>
                                 </div>
-                            </td>
-                        </tr>
-                    </template>
-                </tbody>
-            </table>
-        </div>
-    </div>
+                            </div>
+
+                            <!-- 2. PIE CHART: Gender / Jenis Kelamin -->
+                            <div class="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col">
+                                <h3 class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-4">Proporsi Gender Pasien</h3>
+                                <div class="relative flex-1 w-full min-h-[220px] flex justify-center">
+                                    <canvas id="genderPieChart"></canvas>
+                                </div>
+                            </div>
+
+                            <!-- 3. BAR CHART: Rata-rata Skor per Pertanyaan -->
+                            <div class="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col">
+                                <h3 class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-4">Rata-rata Skor per Pertanyaan</h3>
+                                <div class="relative flex-1 w-full min-h-[220px]">
+                                    <canvas id="questionBarChart"></canvas>
+                                </div>
+                            </div>
+                            
+                        </div>
+
+                        <!-- BOTTOM ROW: Tabel Data & Saran -->
+                        <div x-show="!isLoading" class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden flex flex-col mt-6" x-cloak>
+                            <div class="p-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-800">
+                                <h3 class="text-sm font-bold text-gray-700 dark:text-gray-300">Tabel Responden & Saran/Masukan</h3>
+                                <span class="text-xs px-2 py-1 bg-sky-100 text-sky-700 rounded-md font-semibold" x-text="surveyData.length + ' Responden'"></span>
+                            </div>
+                            
+                            <div class="overflow-x-auto overflow-y-auto max-h-[500px] w-full">
+                                <table class="w-full text-left text-sm text-gray-600 dark:text-gray-400">
+                                    <thead class="bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-300 text-xs uppercase font-semibold sticky top-0 z-10 shadow-sm">
+                                        <tr>
+                                            <th class="px-4 py-3 whitespace-nowrap">Tanggal</th>
+                                            <th class="px-4 py-3 min-w-[150px]">Nama</th>
+                                            <th class="px-4 py-3 whitespace-nowrap">Ruangan</th>
+                                            <th class="px-4 py-3 text-center whitespace-nowrap">Rata Skor</th>
+                                            <th class="px-4 py-3 min-w-[250px]">Saran & Masukan</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                                        <template x-for="(item, index) in surveyData" :key="index">
+                                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                                                <td class="px-4 py-3 whitespace-nowrap text-xs" x-text="String(item.tanggal || item.timestamp).substring(0,10)"></td>
+                                                <td class="px-4 py-3 font-medium text-gray-800 dark:text-gray-200" x-text="item.nama"></td>
+                                                <td class="px-4 py-3 whitespace-nowrap" x-text="item.ruangan"></td>
+                                                <td class="px-4 py-3 text-center">
+                                                    <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold"
+                                                        :class="item.skor_rata_rata >= 4 ? 'bg-green-100 text-green-700' : (item.skor_rata_rata >= 3 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700')">
+                                                        <i class="fas fa-star text-[10px]"></i>
+                                                        <span x-text="item.skor_rata_rata"></span>
+                                                    </span>
+                                                </td>
+                                                <td class="px-4 py-3 text-gray-500 dark:text-gray-400">
+                                                    <div class="truncate max-w-[200px] md:max-w-xs lg:max-w-md xl:max-w-xl cursor-help hover:text-sky-600 transition-colors" 
+                                                        :title="item.saran && item.saran.trim() !== '' ? item.saran : 'Tidak ada saran'"
+                                                        x-text="item.saran && item.saran.trim() !== '' ? '\&quot;' + item.saran + '\&quot;' : '- Tidak ada saran -'">
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </section>
-                
 
 
             </div>
@@ -1292,209 +1346,355 @@
             }
         }
 
+
         function surveyData() {
     return {
-      surveyData: [],
-      isLoading: true, 
-      timeFilter: 'month', 
-      
-      initDashboard() {
-        this.fetchData();
-      },
-
-      async fetchData() {
-        const urlAPI = 'https://script.google.com/macros/s/AKfycbxhfUiKoGP_KHkQEbG4FmF940RtPeJj-pCF7q4kDW5ob036fFcGYcOuJEQU-KXPDf_0/exec';
+        allData: [],     
+        surveyData: [],  
+        isLoading: true, 
+        timeFilter: 'month', 
+        periodFilter: 'FULL', 
         
-        try {
-          const response = await fetch(urlAPI);
-          const rawData = await response.json();
-          
-          const convertTextToNumber = (text) => {
-            switch(String(text).toLowerCase().trim()) {
-              case 'sangat baik': return 5;
-              case 'baik': return 4;
-              case 'cukup': return 3;
-              case 'kurang': return 2;
-              case 'sangat kurang': return 1;
-              default: return 3; 
-            }
-          };
-          
-          this.surveyData = rawData.map(item => {
-            let n1 = convertTextToNumber(item.q1);
-            let n2 = convertTextToNumber(item.q2);
-            let n3 = convertTextToNumber(item.q3);
-            let n4 = convertTextToNumber(item.q4);
-            let n5 = convertTextToNumber(item.q5);
-            let rataRata = (n1 + n2 + n3 + n4 + n5) / 5;
+        initDashboard() {
+            this.isLoading = true;
+            this.fetchData();
+        },
+
+        async fetchData() {
+            const urlAPI = 'https://script.google.com/macros/s/AKfycbxhfUiKoGP_KHkQEbG4FmF940RtPeJj-pCF7q4kDW5ob036fFcGYcOuJEQU-KXPDf_0/exec';
             
-            // JURUS AMPUH: Mencari kolom saran dari hasil replace Google Script
-            let kunciSaran = Object.keys(item).find(key => 
-                key.includes('saran') || 
-                key.includes('masukan')
-            );
-            
-            // Ambil teksnya, pastikan tidak "undefined"
-            let teksSaran = "";
-            if (kunciSaran && item[kunciSaran]) {
-                teksSaran = String(item[kunciSaran]).trim();
-            }
-            
-            return {
-              ...item,
-              skor_rata_rata: rataRata.toFixed(1),
-              // Paksa masukkan ke dalam properti 'saran'
-              saran: teksSaran 
-            };
-          });
-
-          // Urutkan data terbaru di atas
-          this.surveyData.reverse(); 
-          this.isLoading = false;
-
-          setTimeout(() => {
-              this.updateCharts();
-          }, 150);
-          
-        } catch (error) {
-          console.error('Gagal mengambil data:', error);
-          this.isLoading = false;
-        }
-      },
-
-      updateCharts() {
-        this.renderLineChart();
-        this.renderPieChart();
-      },
-
-      formatDateLabel(dateStr) {
-        const d = new Date(dateStr);
-        if (isNaN(d.getTime())) return "Unknown";
-        if (this.timeFilter === 'day') {
-            return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-        } else if (this.timeFilter === 'month') {
-            return d.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' });
-        } else if (this.timeFilter === 'week') {
-            const startOfYear = new Date(d.getFullYear(), 0, 1);
-            const days = Math.floor((d - startOfYear) / (24 * 60 * 60 * 1000));
-            const week = Math.ceil((days + startOfYear.getDay() + 1) / 7);
-            return `Mg-${week} ${d.getFullYear()}`;
-        }
-      },
-
-      renderLineChart() {
-        if (!this.surveyData || this.surveyData.length === 0) return;
-        const groupedData = {};
-
-        this.surveyData.forEach(item => {
-          const dateStr = item.tanggal || item.timestamp;
-          if (!dateStr) return;
-          const dateObj = new Date(dateStr);
-          const label = this.formatDateLabel(dateStr);
-
-          if (!groupedData[label]) {
-            groupedData[label] = { totalScore: 0, count: 0, timeIndex: dateObj.getTime() };
-          }
-          groupedData[label].totalScore += parseFloat(item.skor_rata_rata);
-          groupedData[label].count += 1;
-        });
-
-        const sortedLabels = Object.keys(groupedData).sort((a, b) => groupedData[a].timeIndex - groupedData[b].timeIndex);
-        const chartLabels = [];
-        const chartData = [];
-
-        sortedLabels.forEach(label => {
-          chartLabels.push(label);
-          chartData.push((groupedData[label].totalScore / groupedData[label].count).toFixed(2));
-        });
-
-        const ctx = document.getElementById('trendLineChart');
-        if(!ctx) return; 
-        if (window.surveyTrendChart) window.surveyTrendChart.destroy();
-
-        window.surveyTrendChart = new Chart(ctx.getContext('2d'), {
-          type: 'line',
-          data: {
-            labels: chartLabels,
-            datasets: [{
-              label: 'Rata-rata Kepuasan',
-              data: chartData,
-              borderColor: '#0ea5e9',
-              backgroundColor: 'rgba(14, 165, 233, 0.1)',
-              borderWidth: 3,
-              pointBackgroundColor: '#fff',
-              pointBorderColor: '#0ea5e9',
-              pointBorderWidth: 2,
-              pointRadius: 4,
-              fill: true,
-              tension: 0.4
-            }]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: { 
-                y: { 
-                    beginAtZero: true, min: 1, max: 5,
-                    ticks: {
-                        callback: function(value) {
-                            if(value === 5) return 'Sangat Baik (5)';
-                            if(value === 4) return 'Baik (4)';
-                            if(value === 3) return 'Cukup (3)';
-                            if(value === 2) return 'Kurang (2)';
-                            if(value === 1) return 'Sgt Kurang (1)';
-                            return '';
-                        },
-                        stepSize: 1
+            try {
+                const response = await fetch(urlAPI);
+                const rawData = await response.json();
+                
+                if (!Array.isArray(rawData)) throw new Error("Data API tidak valid");
+                
+                const convertTextToNumber = (text) => {
+                    switch(String(text).toLowerCase().trim()) {
+                        case 'sangat baik': return 5;
+                        case 'baik': return 4;
+                        case 'cukup': return 3;
+                        case 'kurang': return 2;
+                        case 'sangat kurang': return 1;
+                        default: return 3; 
                     }
-                } 
-            },
-            plugins: { legend: { display: false } }
-          }
-        });
-      },
+                };
+                
+                this.allData = rawData.map(item => {
+                    let n1 = convertTextToNumber(item.q1);
+                    let n2 = convertTextToNumber(item.q2);
+                    let n3 = convertTextToNumber(item.q3);
+                    let n4 = convertTextToNumber(item.q4);
+                    let n5 = convertTextToNumber(item.q5);
+                    let rataRata = (n1 + n2 + n3 + n4 + n5) / 5;
+                    
+                    let kunciSaran = Object.keys(item).find(key => key.includes('saran') || key.includes('masukan'));
+                    let teksSaran = (kunciSaran && item[kunciSaran]) ? String(item[kunciSaran]).trim() : "";
+                    
+                    return {
+                        ...item,
+                        skor_rata_rata: rataRata.toFixed(1),
+                        saran: teksSaran,
+                        _q1: n1, _q2: n2, _q3: n3, _q4: n4, _q5: n5 
+                    };
+                });
 
-      renderPieChart() {
-        if (!this.surveyData || this.surveyData.length === 0) return;
-        let counts = { 'Sangat Baik': 0, 'Baik': 0, 'Cukup': 0, 'Kurang': 0, 'Sangat Kurang': 0 };
+                this.applyFilter(); 
 
-        this.surveyData.forEach(item => {
-            [item.q1, item.q2, item.q3, item.q4, item.q5].forEach(ans => {
-                let text = String(ans || '').toLowerCase().trim();
-                if (text === 'sangat baik') counts['Sangat Baik']++;
-                else if (text === 'baik') counts['Baik']++;
-                else if (text === 'cukup') counts['Cukup']++;
-                else if (text === 'kurang') counts['Kurang']++;
-                else if (text === 'sangat kurang') counts['Sangat Kurang']++;
+            } catch (error) {
+                console.error('Gagal mengambil data:', error);
+                this.isLoading = false; 
+            }
+        },
+
+        parseSafeDate(dateRaw) {
+            if (!dateRaw) return null;
+            
+            // Prioritaskan Cek Format DD/MM/YYYY Indonesia
+            let parts = String(dateRaw).split(/[\/\-]/);
+            if (parts.length === 3 && parts[0].length <= 2) { // Cek format DD/MM/YYYY
+                let dd = parseInt(parts[0], 10);
+                let mm = parseInt(parts[1], 10) - 1; 
+                let yyyy = parseInt(parts[2], 10);
+                if (yyyy < 100) yyyy += 2000; // Handle jika penulisan tahun cuma 2 digit
+                let d2 = new Date(yyyy, mm, dd);
+                if (!isNaN(d2.getTime())) return d2;
+            }
+
+            // Fallback native parse
+            let d = new Date(dateRaw);
+            if (!isNaN(d.getTime())) return d;
+            
+            return null;
+        },
+
+        applyFilter() {
+            // Filter Triwulan / Semester
+            let filteredData = this.allData.filter(item => {
+                if (this.periodFilter === 'FULL') return true;
+                
+                let dateObj = this.parseSafeDate(item.tanggal || item.timestamp);
+                if (!dateObj) return true; 
+                
+                let month = dateObj.getMonth() + 1;
+                if (this.periodFilter === 'TW1') return month >= 1 && month <= 6; 
+                if (this.periodFilter === 'TW2') return month >= 7 && month <= 12; 
+                return true;
             });
-        });
 
-        const ctx = document.getElementById('distributionPieChart');
-        if(!ctx) return;
-        if (window.surveyDistributionChart) window.surveyDistributionChart.destroy();
+            // Sorting Dasar (terlama -> terbaru)
+            filteredData.sort((a, b) => {
+                let dateA = this.parseSafeDate(a.tanggal || a.timestamp);
+                let dateB = this.parseSafeDate(b.tanggal || b.timestamp);
+                if (!dateA) return 1; if (!dateB) return -1;
+                return dateA.getTime() - dateB.getTime(); 
+            });
 
-        window.surveyDistributionChart = new Chart(ctx.getContext('2d'), {
-          type: 'doughnut', 
-          data: {
-            labels: ['Sangat Baik', 'Baik', 'Cukup', 'Kurang', 'Sangat Kurang'],
-            datasets: [{
-              data: [counts['Sangat Baik'], counts['Baik'], counts['Cukup'], counts['Kurang'], counts['Sangat Kurang']],
-              backgroundColor: ['#10b981', '#34d399', '#fbbf24', '#f87171', '#dc2626'],
-              borderWidth: 0,
-              hoverOffset: 4
-            }]
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false, cutout: '65%',
-            plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, usePointStyle: true, font: { size: 11 } } } }
-          }
-        });
-      }
+            this.surveyData = filteredData;
+            this.isLoading = false;
+
+            // setTimeout dibutuhkan agar DOM chart selesai dimuat saat `isLoading` menjadi false
+            setTimeout(() => {
+                this.updateCharts();
+            }, 100);
+        },
+
+        mapRoomAbbreviation(rawName) {
+            if(!rawName) return 'Lainnya';
+            let name = rawName.toUpperCase();
+            if (name.includes('IGD')) return 'IGD';
+            if (name.includes('KISABRANG')) return 'FASMED';
+            if (name.includes('ANGSANA')) return 'KESLING';
+            if (name.includes('LEMPUYANG')) return 'GIZI';
+            if (name.includes('DARMAKUSUMAH')) return 'RADIOLOGI';
+            if (name.includes('SALAKANAGARA')) return 'LAB';
+            if (name.includes('SURAWISESA')) return 'FARMASI';
+            if (name.includes('KENCANASARI')) return 'POLI';
+            if (name.includes('MANIKMAYA')) return 'REHAB';
+            if (name.includes('DIALISIS') || name.includes('HEMODIALISA')) return 'HEMO';
+            if (name.includes('NICU')) return 'NICU';
+            if (name.includes('ICVCU')) return 'ICVCU';
+            if (name.includes('PICU')) return 'PICU';
+            if (name.includes('BEDAH SENTRAL')) return 'OK';
+            if (name.includes('MEDREK') || name.includes('JKN')) return 'JKN';
+            if (name.includes('PURBASORA') || name.includes('CANDRARESMI')) return 'VK';
+            if (name.includes('BUNISORA')) return 'PERI';
+            if (name.includes('JAYANINGRAT')) return 'IPD';
+            if (name.includes('BRAJAWISESA') && name.includes('LT. 9')) return 'RANAP LT9';
+            if (name.includes('MAYANGSARI')) return 'ANAK';
+            if (name.includes('RARA SANTANG')) return 'NIFAS';
+            if (name.includes('BRAJAWISESA') && name.includes('LT. 10')) return 'RANAP LT10';
+            if (name.includes('SRI BADUGA')) return 'BEDAH';
+            if (name.includes('TEJAKENCANA')) return 'LT12';
+            return rawName; 
+        },
+
+        updateCharts() {
+            try { this.renderLineChart(); } catch(e){ console.error(e); }
+            try { this.renderPieChart(); } catch(e){ console.error(e); }
+            try { this.renderRoomChart(); } catch(e){ console.error(e); }
+            try { this.renderGenderChart(); } catch(e){ console.error(e); }
+            try { this.renderQuestionChart(); } catch(e){ console.error(e); }
+        },
+
+        getGroupTimeInfo(dateObj) {
+            let d = new Date(dateObj.getTime());
+            d.setHours(0, 0, 0, 0); 
+
+            if (this.timeFilter === 'month') {
+                d.setDate(1); 
+                return {
+                    sortKey: d.getTime(), 
+                    label: d.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' }) 
+                };
+            } else if (this.timeFilter === 'week') {
+                let day = d.getDay();
+                let diff = d.getDate() - day + (day === 0 ? -6 : 1);
+                d.setDate(diff);
+                return {
+                    sortKey: d.getTime(),
+                    label: d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }) + ' (Pekan)' 
+                };
+            } else {
+                return {
+                    sortKey: d.getTime(),
+                    label: d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) 
+                };
+            }
+        },
+
+        renderLineChart() {
+            if (!this.surveyData || this.surveyData.length === 0) return;
+            const groupedData = {};
+
+            this.surveyData.forEach(item => {
+                const dateStr = item.tanggal || item.timestamp;
+                if (!dateStr) return;
+                
+                // Gunakan fungsi parseSafeDate untuk mengubah string jadi Date object
+                const dateObj = this.parseSafeDate(dateStr);
+                if (!dateObj) return;
+
+                // FIX: Gunakan getGroupTimeInfo() yang sebelumnya tidak terpakai
+                const timeInfo = this.getGroupTimeInfo(dateObj);
+                const label = timeInfo.label;
+
+                if (!groupedData[label]) {
+                    groupedData[label] = { totalScore: 0, count: 0, timeIndex: timeInfo.sortKey };
+                }
+                groupedData[label].totalScore += parseFloat(item.skor_rata_rata);
+                groupedData[label].count += 1;
+            });
+
+            const sortedLabels = Object.keys(groupedData).sort((a, b) => groupedData[a].timeIndex - groupedData[b].timeIndex);
+            const chartLabels = [];
+            const chartData = [];
+
+            sortedLabels.forEach(label => {
+                chartLabels.push(label);
+                chartData.push((groupedData[label].totalScore / groupedData[label].count).toFixed(2));
+            });
+
+            const ctx = document.getElementById('trendLineChart');
+            if(!ctx) return; 
+            if (window.surveyTrendChart) window.surveyTrendChart.destroy();
+
+            window.surveyTrendChart = new Chart(ctx.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        label: 'Rata-rata Kepuasan',
+                        data: chartData,
+                        borderColor: '#0ea5e9',
+                        backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#0ea5e9',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { 
+                        y: { 
+                            beginAtZero: true, min: 1, max: 5,
+                            ticks: {
+                                callback: function(value) {
+                                    if(value === 5) return 'Sangat Baik (5)';
+                                    if(value === 4) return 'Baik (4)';
+                                    if(value === 3) return 'Cukup (3)';
+                                    if(value === 2) return 'Kurang (2)';
+                                    if(value === 1) return 'Sgt Kurang (1)';
+                                    return '';
+                                },
+                                stepSize: 1
+                            }
+                        } 
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        },
+
+        renderPieChart() {
+            const ctx = document.getElementById('distributionPieChart');
+            if(!ctx) return;
+            if (window.surveyDistributionChart) window.surveyDistributionChart.destroy();
+            if (!this.surveyData || this.surveyData.length === 0) return;
+            
+            let counts = { 'Sangat Baik': 0, 'Baik': 0, 'Cukup': 0, 'Kurang': 0, 'Sangat Kurang': 0 };
+            this.surveyData.forEach(item => {
+                [item.q1, item.q2, item.q3, item.q4, item.q5].forEach(ans => {
+                    let text = String(ans || '').toLowerCase().trim();
+                    if (text === 'sangat baik') counts['Sangat Baik']++;
+                    else if (text === 'baik') counts['Baik']++;
+                    else if (text === 'cukup') counts['Cukup']++;
+                    else if (text === 'kurang') counts['Kurang']++;
+                    else if (text === 'sangat kurang') counts['Sangat Kurang']++;
+                });
+            });
+
+            window.surveyDistributionChart = new Chart(ctx.getContext('2d'), {
+                type: 'doughnut', 
+                data: {
+                    labels: ['Sangat Baik', 'Baik', 'Cukup', 'Kurang', 'Sangat Kurang'],
+                    datasets: [{ data: Object.values(counts), backgroundColor: ['#10b981', '#34d399', '#fbbf24', '#f87171', '#dc2626'], borderWidth: 0 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, font: { size: 11 } } } } }
+            });
+        },
+
+        renderRoomChart() {
+            const ctx = document.getElementById('roomBarChart');
+            if(!ctx) return;
+            if (window.roomBarChartInstance) window.roomBarChartInstance.destroy();
+            if (!this.surveyData.length) return;
+            
+            let roomCounts = {};
+            this.surveyData.forEach(item => {
+                let r = this.mapRoomAbbreviation(item.ruangan); 
+                roomCounts[r] = (roomCounts[r] || 0) + 1;
+            });
+            let sortedRooms = Object.keys(roomCounts).sort((a,b) => roomCounts[b] - roomCounts[a]);
+            let labels = [], dataCounts = [];
+            sortedRooms.forEach(room => { labels.push(room); dataCounts.push(roomCounts[room]); });
+
+            window.roomBarChartInstance = new Chart(ctx.getContext('2d'), {
+                type: 'bar',
+                data: { labels: labels, datasets: [{ label: 'Jumlah Survey', data: dataCounts, backgroundColor: '#3b82f6', borderRadius: 4 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } }, x: { ticks: { font: { size: 10 } } } }, plugins: { legend: { display: false } } }
+            });
+        },
+
+        renderGenderChart() {
+            const ctx = document.getElementById('genderPieChart');
+            if(!ctx) return;
+            if (window.genderPieChartInstance) window.genderPieChartInstance.destroy();
+            if (!this.surveyData.length) return;
+            
+            let genderCounts = { 'Laki-laki': 0, 'Perempuan': 0 };
+            this.surveyData.forEach(item => {
+                let kunciGender = Object.keys(item).find(key => key.includes('gender') || key.includes('kelamin'));
+                let val = kunciGender ? String(item[kunciGender]).toLowerCase() : '';
+                if (val.includes('laki') || val === 'l') genderCounts['Laki-laki']++;
+                else if (val.includes('perempuan') || val.includes('wanita') || val === 'p') genderCounts['Perempuan']++;
+            });
+
+            window.genderPieChartInstance = new Chart(ctx.getContext('2d'), {
+                type: 'pie',
+                data: { labels: ['Laki-laki', 'Perempuan'], datasets: [{ data: [genderCounts['Laki-laki'], genderCounts['Perempuan']], backgroundColor: ['#60a5fa', '#f472b6'], borderWidth: 1, borderColor: '#fff' }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 10 } } } }
+            });
+        },
+
+        renderQuestionChart() {
+            const ctx = document.getElementById('questionBarChart');
+            if(!ctx) return;
+            if (window.questionBarChartInstance) window.questionBarChartInstance.destroy();
+            if (!this.surveyData.length) return;
+            
+            let total = { q1: 0, q2: 0, q3: 0, q4: 0, q5: 0 };
+            let count = this.surveyData.length;
+            this.surveyData.forEach(item => {
+                total.q1 += item._q1; total.q2 += item._q2; total.q3 += item._q3; total.q4 += item._q4; total.q5 += item._q5;
+            });
+            let avgData = [ (total.q1 / count).toFixed(2), (total.q2 / count).toFixed(2), (total.q3 / count).toFixed(2), (total.q4 / count).toFixed(2), (total.q5 / count).toFixed(2) ];
+
+            window.questionBarChartInstance = new Chart(ctx.getContext('2d'), {
+                type: 'bar',
+                data: { labels: ['P1', 'P2', 'P3', 'P4', 'P5'], datasets: [{ label: 'Rata-rata Skor', data: avgData, backgroundColor: ['#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e'], borderRadius: 4 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 5 } }, plugins: { legend: { display: false } } }
+            });
+        }
     }
 }
 
-
-
+        
     </script>
 
 </body>
