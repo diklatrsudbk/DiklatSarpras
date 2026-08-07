@@ -253,7 +253,7 @@
                             <button id="btn-export" onclick="exportKehadiran()" class="hidden bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                                 <i class="fas fa-download mr-1"></i> Export JPG
                             </button>
-                            <button id="btn-add-new" onclick="openFormModal()" class="bg-skybase hover:bg-sky-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap">
+                            <button id="btn-add-new" onclick="handleAddData()" class="bg-skybase hover:bg-sky-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap">
                                 <i class="fas fa-plus mr-1"></i> Add Data
                             </button>
                             <button onclick="refreshCurrentData()" class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 p-2 rounded-lg transition-colors" title="Refresh Data">
@@ -364,22 +364,22 @@
                         </div>
 
                         <!-- Tombol Survey KPPD -->
-                            <a href="surveykppd.html" target="_blank" class="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm text-sm font-medium transition duration-200">
-                                <!-- Ikon Form / Clipboard -->
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
-                                </svg>
-                                Survey KPPD
-                            </a>
-                    
-                            <!-- Tombol Buka Spreadsheet -->
-                            <a href="https://docs.google.com/spreadsheets/d/1EBaKg_8PUU4QI0cRr0k4xSGvx9Mbp-dhouocVnz8A5s/edit?gid=0#gid=0" target="_blank" class="flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-800 text-white rounded-lg shadow-sm text-sm font-medium transition duration-200">
-                                <!-- Ikon Google Sheets / Tabel -->
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                </svg>
-                                Data Spreadsheet
-                            </a>
+                        <a href="surveykppd.html" target="_blank" class="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm text-sm font-medium transition duration-200">
+                            <!-- Ikon Form / Clipboard -->
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                            </svg>
+                            Survey KPPD
+                        </a>
+
+                        <!-- Tombol Buka Spreadsheet -->
+                        <a href="https://docs.google.com/spreadsheets/d/1EBaKg_8PUU4QI0cRr0k4xSGvx9Mbp-dhouocVnz8A5s/edit?gid=0#gid=0" target="_blank" class="flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-800 text-white rounded-lg shadow-sm text-sm font-medium transition duration-200">
+                            <!-- Ikon Google Sheets / Tabel -->
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            Data Spreadsheet
+                        </a>
 
                         <!-- Loading State (Duplikat sudah dihapus) -->
                         <div x-show="isLoading" class="flex justify-center items-center py-10">
@@ -437,7 +437,7 @@
 
                             <!-- 3. BAR CHART: Rata-rata Skor per Pertanyaan -->
                             <div class="bg-white dark:bg-gray-800 p-5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col">
-                                <h3 class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-4">Rata-rata Skor per Pertanyaan</h3>
+                                <h3 class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-4">Persentase Penilaian P1 - P5</h3>
                                 <div class="relative flex-1 w-full min-h-[220px]">
                                     <canvas id="questionBarChart"></canvas>
                                 </div>
@@ -988,56 +988,9 @@
             await fetchSheetData(AppState.activeFileType, AppState.activeSheet);
         }
 
-        function openFormModal(rowData = null) {
-            if (AppState.currentHeaders.length === 0) {
-                showMessage('Peringatan', 'Sheet ini belum memiliki struktur kolom (Header). Tidak dapat menambah data.', 'warning');
-                return;
-            }
+       
 
-            AppState.editingRowIndex = rowData ? rowData._rowIndex : null;
-            document.getElementById('modal-title').innerText = rowData ? `Edit Data - ${AppState.activeSheet}` : `Tambah Data - ${AppState.activeSheet}`;
-            
-            const form = document.getElementById('dynamic-form');
-            form.innerHTML = '';
 
-            AppState.currentHeaders.forEach(h => {
-                const val = rowData ? (rowData[h] || '') : '';
-                const type = detectInputType(h, val);
-                
-                // Skip kolom yang sifatnya read-only / auto-generated di backend (misal timestamp)
-                if (h.toLowerCase() === 'timestamp' || h.toLowerCase() === 'id' && !rowData) {
-                    return; 
-                }
-
-                let inputHTML = '';
-                if(type === 'textarea') {
-                    inputHTML = `<textarea name="${h}" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-skybase outline-none transition-shadow text-sm" rows="3">${val}</textarea>`;
-                } else if(type === 'date') {
-                    // Coba parsing ke format YYYY-MM-DD
-                    let dateVal = val;
-                    if(val && val.includes('T')) dateVal = val.split('T')[0];
-                    inputHTML = `<input type="date" name="${h}" value="${dateVal}" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-skybase outline-none transition-shadow text-sm">`;
-                } else {
-                    inputHTML = `<input type="text" name="${h}" value="${val}" class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-skybase outline-none transition-shadow text-sm">`;
-                }
-
-                form.innerHTML += `
-                    <div class="mb-3 ${type==='textarea' ? 'col-span-1 md:col-span-2' : ''}">
-                        <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase mb-1">${h.replace(/_/g, ' ')}</label>
-                        ${inputHTML}
-                    </div>
-                `;
-            });
-
-            const modal = document.getElementById('form-modal');
-            const content = document.getElementById('form-modal-content');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-            setTimeout(() => {
-                content.classList.remove('scale-95', 'opacity-0');
-                content.classList.add('scale-100', 'opacity-100');
-            }, 10);
-        }
 
         function closeFormModal() {
             const modal = document.getElementById('form-modal');
@@ -1629,9 +1582,35 @@
                 type: 'doughnut', 
                 data: {
                     labels: ['Sangat Baik', 'Baik', 'Cukup', 'Kurang', 'Sangat Kurang'],
-                    datasets: [{ data: Object.values(counts), backgroundColor: ['#10b981', '#34d399', '#fbbf24', '#f87171', '#dc2626'], borderWidth: 0 }]
+                    datasets: [{ 
+                        data: Object.values(counts), 
+                        backgroundColor: ['#10b981', '#34d399', '#fbbf24', '#f87171', '#dc2626'], 
+                        borderWidth: 0 
+                    }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, font: { size: 11 } } } } }
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    cutout: '65%', 
+                    plugins: { 
+                        legend: { 
+                            position: 'bottom', 
+                            labels: { usePointStyle: true, font: { size: 11 } } 
+                        },
+                        // PERBAIKAN: Menambahkan persentase di Tooltip saat di-hover
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    let value = context.raw || 0;
+                                    let total = context.chart._metasets[context.datasetIndex].total;
+                                    let percentage = total > 0 ? ((value * 100) / total).toFixed(1) + '%' : '0%';
+                                    return `${label}: ${value} (${percentage})`;
+                                }
+                            }
+                        }
+                    } 
+                }
             });
         },
 
@@ -1646,14 +1625,46 @@
                 let r = this.mapRoomAbbreviation(item.ruangan); 
                 roomCounts[r] = (roomCounts[r] || 0) + 1;
             });
+            
             let sortedRooms = Object.keys(roomCounts).sort((a,b) => roomCounts[b] - roomCounts[a]);
             let labels = [], dataCounts = [];
             sortedRooms.forEach(room => { labels.push(room); dataCounts.push(roomCounts[room]); });
 
+            // Menghitung grand total untuk mencari persentase ruangan
+            let totalSurveys = dataCounts.reduce((sum, val) => sum + val, 0);
+
             window.roomBarChartInstance = new Chart(ctx.getContext('2d'), {
                 type: 'bar',
-                data: { labels: labels, datasets: [{ label: 'Jumlah Survey', data: dataCounts, backgroundColor: '#3b82f6', borderRadius: 4 }] },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } }, x: { ticks: { font: { size: 10 } } } }, plugins: { legend: { display: false } } }
+                data: { 
+                    labels: labels, 
+                    datasets: [{ 
+                        label: 'Jumlah Survey', 
+                        data: dataCounts, 
+                        backgroundColor: '#3b82f6', 
+                        borderRadius: 4 
+                    }] 
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    scales: { 
+                        y: { beginAtZero: true, ticks: { stepSize: 1 } }, 
+                        x: { ticks: { font: { size: 10 } } } 
+                    }, 
+                    plugins: { 
+                        legend: { display: false },
+                        // PERBAIKAN: Menambahkan tooltip persentase
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let value = context.raw || 0;
+                                    let percentage = totalSurveys > 0 ? ((value * 100) / totalSurveys).toFixed(1) + '%' : '0%';
+                                    return `Jumlah: ${value} (${percentage})`;
+                                }
+                            }
+                        }
+                    } 
+                }
             });
         },
 
@@ -1673,8 +1684,87 @@
 
             window.genderPieChartInstance = new Chart(ctx.getContext('2d'), {
                 type: 'pie',
-                data: { labels: ['Laki-laki', 'Perempuan'], datasets: [{ data: [genderCounts['Laki-laki'], genderCounts['Perempuan']], backgroundColor: ['#60a5fa', '#f472b6'], borderWidth: 1, borderColor: '#fff' }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 10 } } } }
+                data: { 
+                    labels: ['Laki-laki', 'Perempuan'], 
+                    datasets: [{ 
+                        data: [genderCounts['Laki-laki'], genderCounts['Perempuan']], 
+                        backgroundColor: ['#60a5fa', '#f472b6'], 
+                        borderWidth: 1, 
+                        borderColor: '#fff' 
+                    }] 
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { 
+                        legend: { 
+                            position: 'bottom', 
+                            labels: { usePointStyle: true, boxWidth: 10 } 
+                        },
+                        // PERBAIKAN: Menambahkan tooltip persentase
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    let value = context.raw || 0;
+                                    let total = context.chart._metasets[context.datasetIndex].total;
+                                    let percentage = total > 0 ? ((value * 100) / total).toFixed(1) + '%' : '0%';
+                                    return `${label}: ${value} (${percentage})`;
+                                }
+                            }
+                        }
+                    } 
+                }
+            });
+        },
+
+        renderGenderChart() {
+            const ctx = document.getElementById('genderPieChart');
+            if(!ctx) return;
+            if (window.genderPieChartInstance) window.genderPieChartInstance.destroy();
+            if (!this.surveyData.length) return;
+            
+            let genderCounts = { 'Laki-laki': 0, 'Perempuan': 0 };
+            this.surveyData.forEach(item => {
+                let kunciGender = Object.keys(item).find(key => key.includes('gender') || key.includes('kelamin'));
+                let val = kunciGender ? String(item[kunciGender]).toLowerCase() : '';
+                if (val.includes('laki') || val === 'l') genderCounts['Laki-laki']++;
+                else if (val.includes('perempuan') || val.includes('wanita') || val === 'p') genderCounts['Perempuan']++;
+            });
+
+            window.genderPieChartInstance = new Chart(ctx.getContext('2d'), {
+                type: 'pie',
+                data: { 
+                    labels: ['Laki-laki', 'Perempuan'], 
+                    datasets: [{ 
+                        data: [genderCounts['Laki-laki'], genderCounts['Perempuan']], 
+                        backgroundColor: ['#60a5fa', '#f472b6'], 
+                        borderWidth: 1, 
+                        borderColor: '#fff' 
+                    }] 
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { 
+                        legend: { 
+                            position: 'bottom', 
+                            labels: { usePointStyle: true, boxWidth: 10 } 
+                        },
+                        // PERBAIKAN: Menambahkan tooltip persentase
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    let value = context.raw || 0;
+                                    let total = context.chart._metasets[context.datasetIndex].total;
+                                    let percentage = total > 0 ? ((value * 100) / total).toFixed(1) + '%' : '0%';
+                                    return `${label}: ${value} (${percentage})`;
+                                }
+                            }
+                        }
+                    } 
+                }
             });
         },
 
@@ -1684,17 +1774,84 @@
             if (window.questionBarChartInstance) window.questionBarChartInstance.destroy();
             if (!this.surveyData.length) return;
             
-            let total = { q1: 0, q2: 0, q3: 0, q4: 0, q5: 0 };
-            let count = this.surveyData.length;
-            this.surveyData.forEach(item => {
-                total.q1 += item._q1; total.q2 += item._q2; total.q3 += item._q3; total.q4 += item._q4; total.q5 += item._q5;
-            });
-            let avgData = [ (total.q1 / count).toFixed(2), (total.q2 / count).toFixed(2), (total.q3 / count).toFixed(2), (total.q4 / count).toFixed(2), (total.q5 / count).toFixed(2) ];
+            // Siapkan wadah data untuk menghitung setiap opsi di P1-P5
+            let qData = {
+                'Sangat Baik': [0, 0, 0, 0, 0],
+                'Baik': [0, 0, 0, 0, 0],
+                'Cukup': [0, 0, 0, 0, 0],
+                'Kurang': [0, 0, 0, 0, 0],
+                'Sangat Kurang': [0, 0, 0, 0, 0]
+            };
+            let totalPerQ = [0, 0, 0, 0, 0];
 
+            // Mapping jumlah respons per pertanyaan
+            this.surveyData.forEach(item => {
+                const mapRating = (val, qIndex) => {
+                    let text = String(val || '').toLowerCase().trim();
+                    if (text === 'sangat baik') qData['Sangat Baik'][qIndex]++;
+                    else if (text === 'baik') qData['Baik'][qIndex]++;
+                    else if (text === 'cukup') qData['Cukup'][qIndex]++;
+                    else if (text === 'kurang') qData['Kurang'][qIndex]++;
+                    else if (text === 'sangat kurang') qData['Sangat Kurang'][qIndex]++;
+                    totalPerQ[qIndex]++;
+                };
+                mapRating(item.q1, 0);
+                mapRating(item.q2, 1);
+                mapRating(item.q3, 2);
+                mapRating(item.q4, 3);
+                mapRating(item.q5, 4);
+            });
+
+            // PERBAIKAN: Konversi angka hitungan menjadi persentase (%)
+            for (let key in qData) {
+                for (let i = 0; i < 5; i++) {
+                    if (totalPerQ[i] > 0) {
+                        qData[key][i] = parseFloat(((qData[key][i] / totalPerQ[i]) * 100).toFixed(1));
+                    }
+                }
+            }
+
+            // Render grafik sebagai Stacked Bar Chart 100%
             window.questionBarChartInstance = new Chart(ctx.getContext('2d'), {
                 type: 'bar',
-                data: { labels: ['P1', 'P2', 'P3', 'P4', 'P5'], datasets: [{ label: 'Rata-rata Skor', data: avgData, backgroundColor: ['#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e'], borderRadius: 4 }] },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 5 } }, plugins: { legend: { display: false } } }
+                data: { 
+                    labels: ['P1', 'P2', 'P3', 'P4', 'P5'], 
+                    datasets: [
+                        { label: 'Sangat Baik', data: qData['Sangat Baik'], backgroundColor: '#10b981' },
+                        { label: 'Baik', data: qData['Baik'], backgroundColor: '#34d399' },
+                        { label: 'Cukup', data: qData['Cukup'], backgroundColor: '#fbbf24' },
+                        { label: 'Kurang', data: qData['Kurang'], backgroundColor: '#f87171' },
+                        { label: 'Sangat Kurang', data: qData['Sangat Kurang'], backgroundColor: '#dc2626' }
+                    ] 
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    scales: { 
+                        x: { stacked: true }, // Menumpuk Bar menyamping
+                        y: { 
+                            stacked: true, 
+                            max: 100, // Karena ini persentase max 100%
+                            ticks: { 
+                                callback: function(value) { return value + '%' } 
+                            } 
+                        } 
+                    }, 
+                    plugins: { 
+                        legend: { 
+                            display: true, // Tampilkan legend agar mudah dibaca
+                            position: 'bottom',
+                            labels: { usePointStyle: true, boxWidth: 8, font: { size: 10 } }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.raw + '%';
+                                }
+                            }
+                        }
+                    } 
+                }
             });
         }
     }
